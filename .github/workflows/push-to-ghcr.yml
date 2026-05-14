@@ -40,6 +40,16 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Read NGINX version
+        id: nginx
+        run: |
+          version="$(awk -F= '/^ARG NGINX_VERSION=/ { print $2; exit }' Dockerfile)"
+          if [ -z "$version" ]; then
+            echo "Unable to read NGINX_VERSION from Dockerfile" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -50,7 +60,7 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=master,enable={{is_default_branch}}
-            type=sha,prefix=sha-
+            type=raw,value=${{ steps.nginx.outputs.version }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
