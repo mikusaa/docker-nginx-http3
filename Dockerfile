@@ -245,6 +245,8 @@ ARG NGINX_GROUP_GID
 
 ENV NGINX_VERSION=$NGINX_VERSION
 ENV NGINX_COMMIT=$NGINX_COMMIT
+ENV PUID=$NGINX_USER_UID
+ENV PGID=$NGINX_GROUP_GID
 
 COPY --from=base /var/run/nginx/ /var/run/nginx/
 COPY --from=base /tmp/runDeps.txt /tmp/runDeps.txt
@@ -261,7 +263,7 @@ COPY --from=base /usr/sbin/njs /usr/sbin/njs
 RUN \
 	addgroup --gid $NGINX_GROUP_GID -S nginx \
 	&& adduser --uid $NGINX_USER_UID -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
-	&& apk add --no-cache --virtual .nginx-rundeps tzdata $(cat /tmp/runDeps.txt) \
+	&& apk add --no-cache --virtual .nginx-rundeps shadow su-exec tzdata $(cat /tmp/runDeps.txt) \
 	&& rm /tmp/runDeps.txt \
 	&& ln -s /usr/lib/nginx/modules /etc/nginx/modules \
 	# forward request and error logs to docker log collector
@@ -272,6 +274,9 @@ RUN \
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY ssl_common.conf /etc/nginx/conf.d/ssl_common.conf
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # show env
 RUN env | sort
@@ -290,7 +295,8 @@ STOPSIGNAL SIGTERM
 # nginx.lock and nginx.pid file
 RUN \
   chown -R --verbose nginx:nginx \
-    /var/run/nginx/
+    /var/run/nginx/ \
+    /var/cache/nginx/
 
-USER nginx
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

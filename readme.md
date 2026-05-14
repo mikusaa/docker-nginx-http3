@@ -1,174 +1,202 @@
-## What is this?
-[![Docker Image CI](https://github.com/macbre/docker-nginx-http3/actions/workflows/dockerimage.yml/badge.svg)](https://github.com/macbre/docker-nginx-http3/actions/workflows/dockerimage.yml)
+## 这是什么？
 
-Stable and up-to-date [nginx](https://nginx.org/en/CHANGES) with [QUIC + HTTP/3 support](https://nginx.org/en/docs/http/ngx_http_v3_module.html), [Google's `brotli` compression](https://github.com/google/ngx_brotli), [`zstd` compression](https://github.com/tokers/zstd-nginx-module), [`njs` module](https://nginx.org/en/docs/njs/), [kTLS/sendfile support](https://delthas.fr/blog/2023/kernel-tls/) and [Grade A+ SSL config](https://ssl-config.mozilla.org/).
+[![Docker 镜像 CI](https://github.com/mikusaa/docker-nginx-http3/actions/workflows/dockerimage.yml/badge.svg)](https://github.com/mikusaa/docker-nginx-http3/actions/workflows/dockerimage.yml)
 
-Images for [`linux/amd64`, `linux/arm64` and `linux/arm/v7` architectures](https://github.com/macbre/docker-nginx-http3/pkgs/container/nginx-http3) are provided.
+这是一个自编译的 NGINX Docker 镜像，目标是提供稳定、较新的 NGINX，并内置 QUIC / HTTP/3、HTTP/2、Brotli、Zstandard、njs、GeoIP2、headers-more、kTLS/sendfile 支持，以及一套偏生产环境的 SSL 默认配置。
 
-## How to use this image
-As this project is based on the official [nginx image](https://hub.docker.com/_/nginx/) look for instructions there. In addition to the standard configuration directives, you'll be able to use the brotli module specific ones, see [here for official documentation](https://github.com/google/ngx_brotli#configuration-directives)
+镜像发布到 Docker Hub 和 GitHub Container Registry，并提供 `linux/amd64`、`linux/arm64` 两种架构。
 
-```
-docker pull macbre/nginx-http3:latest
-```
+## 拉取镜像
 
-You can fetch an image from [Github Containers Registry](https://github.com/macbre/docker-nginx-brotli/pkgs/container/nginx-http3) as well:
+从 Docker Hub 拉取：
 
-```
-docker pull ghcr.io/macbre/nginx-http3:latest
+```bash
+docker pull mikusa/nginx-http3:latest
 ```
 
-## What's inside
+从 GitHub Container Registry 拉取：
 
-* [built-in nginx modules](https://nginx.org/en/docs/)
-* [`headers-more-nginx-module`](https://github.com/openresty/headers-more-nginx-module#readme) - sets and clears HTTP request and response headers
-* [`ngx_brotli`](https://github.com/google/ngx_brotli#configuration-directives) - adds [brotli response compression](https://datatracker.ietf.org/doc/html/rfc7932)
-* [`zstd-nginx-module`](https://github.com/tokers/zstd-nginx-module#directives) - adds [Zstandard response compression](https://datatracker.ietf.org/doc/html/rfc8878)
-* [`ngx_http_geoip2_module`](https://github.com/leev/ngx_http_geoip2_module#download-maxmind-geolite2-database-optional) - creates variables with values from the maxmind geoip2 databases based on the client IP
-* [`njs` module](https://nginx.org/en/docs/njs/) - a subset of the JavaScript language that allows extending nginx functionality ([GitHub repository](https://github.com/nginx/njs))
-
-```
-$ docker run -it macbre/nginx-http3 nginx -V
-nginx version: nginx/1.29.8 (5eaf45f)
-built by gcc 13.2.1 20240309 (Alpine 13.2.1_git20240309) 
-built with OpenSSL 3.3.7 7 Apr 2026
-TLS SNI support enabled
-configure arguments: 
-	--build=5eaf45f 
-	--prefix=/etc/nginx 
-	--sbin-path=/usr/sbin/nginx 
-	--modules-path=/usr/lib/nginx/modules 
-	--conf-path=/etc/nginx/nginx.conf 
-	--error-log-path=/var/log/nginx/error.log 
-	--http-log-path=/var/log/nginx/access.log 
-	--pid-path=/var/run/nginx/nginx.pid 
-	--lock-path=/var/run/nginx/nginx.lock 
-	--http-client-body-temp-path=/var/cache/nginx/client_temp 
-	--http-proxy-temp-path=/var/cache/nginx/proxy_temp 
-	--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp 
-	--http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp 
-	--http-scgi-temp-path=/var/cache/nginx/scgi_temp 
-	--user=nginx 
-	--group=nginx 
-	--with-http_ssl_module 
-	--with-http_realip_module 
-	--with-http_addition_module 
-	--with-http_sub_module 
-	--with-http_dav_module 
-	--with-http_flv_module 
-	--with-http_mp4_module 
-	--with-http_gunzip_module 
-	--with-http_gzip_static_module 
-	--with-http_random_index_module 
-	--with-http_secure_link_module 
-	--with-http_stub_status_module 
-	--with-http_auth_request_module 
-	--with-http_xslt_module=dynamic 
-	--with-http_image_filter_module=dynamic 
-	--with-http_geoip_module=dynamic 
-	--with-http_perl_module=dynamic 
-	--with-threads 
-	--with-stream 
-	--with-stream_ssl_module 
-	--with-stream_ssl_preread_module 
-	--with-stream_realip_module 
-	--with-stream_geoip_module=dynamic 
-	--with-http_slice_module 
-	--with-mail 
-	--with-mail_ssl_module 
-	--with-compat 
-	--with-file-aio 
-	--with-http_v2_module 
-	--with-http_v3_module 
-	--with-openssl-opt=enable-ktls 
-	--add-module=/usr/src/ngx_brotli 
-	--add-module=/usr/src/headers-more-nginx-module-0.38 
-	--add-module=/usr/src/njs/nginx 
-	--add-module=/usr/src/zstd 
-	--add-dynamic-module=/usr/src/ngx_http_geoip2_module 
-	--with-cc-opt='-g -O2 -flto=auto -ffat-lto-objects -flto=auto -ffat-lto-objects -I /usr/src/quickjs' 
-	--with-ld-opt='-Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -L /usr/src/quickjs'
-
-
-$ docker run -it macbre/nginx-http3 njs -v
-0.9.8
+```bash
+docker pull ghcr.io/mikusaa/nginx-http3:latest
 ```
 
-## SSL Grade A+ handling
+## 运行用户
 
-Please refer to [Mozilla's SSL Configuration Generator](https://ssl-config.mozilla.org/). This image has `https://ssl-config.mozilla.org/ffdhe2048.txt` DH parameters for DHE ciphers fetched and stored in `/etc/ssl/dhparam.pem`:
+容器默认以 `nginx` 用户运行。镜像支持类似 LSIO 的运行时 UID/GID 自定义，可以通过 `PUID` 和 `PGID` 指定容器内 `nginx` 用户的 UID/GID：
 
+```bash
+docker run --rm \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  mikusa/nginx-http3:latest
 ```
-    ssl_dhparam /etc/ssl/dhparam.pem;
+
+如果显式使用 Docker 的 `--user` 参数以非 root 用户启动，入口脚本会跳过 `PUID` / `PGID` 调整，并直接执行传入命令。
+
+## 内置能力
+
+- NGINX 官方模块：SSL、Real IP、HTTP/2、HTTP/3、stream、mail、slice、auth_request、gzip_static、stub_status 等。
+- `headers-more-nginx-module`：更灵活地设置、覆盖或清理请求/响应头。
+- `ngx_brotli`：支持 Brotli 动态压缩和 `.br` 静态预压缩文件。
+- `zstd-nginx-module`：支持 Zstandard 动态压缩和 `.zst` 静态预压缩文件。
+- `ngx_http_geoip2_module`：基于 MaxMind GeoIP2 数据库生成客户端 IP 相关变量。
+- `njs`：在 NGINX 内使用 JavaScript 扩展请求处理逻辑。
+- kTLS/sendfile：编译时启用 OpenSSL kTLS 选项，用于在支持的系统上优化 TLS 传输。
+
+查看 NGINX 编译参数：
+
+```bash
+docker run --rm mikusa/nginx-http3 nginx -V
 ```
 
-See [ssllabs.com test results for wbc.macbre.net](https://www.ssllabs.com/ssltest/analyze.html?d=wbc.macbre.net).
+查看 njs 版本：
 
-## nginx config files includes
-
-* `.conf` files mounted in `/etc/nginx/main.d` will be included in the `main` nginx context (e.g. you can call [`env` directive](http://nginx.org/en/docs/ngx_core_module.html#env) there)
-* `.conf` files mounted in `/etc/nginx/conf.d` will be included in the `http` nginx context
-
-## QUIC + HTTP/3 support
-
-<img width="577" alt="Screenshot 2021-05-19 at 16 31 10" src="https://user-images.githubusercontent.com/1929317/118840921-baf7d300-b8bf-11eb-8c0f-e57d573a28ce.png">
-
-Please refer to `tests/https.conf` config file for an example config used by the tests. And to Cloudflare docs on [how to enable http/3 support in your browser](https://developers.cloudflare.com/http3/firefox).
-
+```bash
+docker run --rm mikusa/nginx-http3 njs -v
 ```
+
+## 默认配置
+
+主配置文件为 `/etc/nginx/nginx.conf`，额外提供两个 include 入口：
+
+- `/etc/nginx/main.d/*.conf`：包含在 NGINX main context 中，适合放 `load_module`、`env` 等指令。
+- `/etc/nginx/conf.d/*.conf`：包含在 `http` context 中，适合放常规 `server` 配置。
+
+默认 HTTP 配置会：
+
+- 关闭 `server_tokens`。
+- 清理 `Server` 和 `X-Powered-By` 响应头。
+- 设置基础安全响应头。
+- 启用 gzip、Brotli、Zstandard。
+- 使用包含 `$http3` 的访问日志格式，便于区分 HTTP/3 请求。
+
+## SSL 配置
+
+镜像内置 `/etc/ssl/dhparam.pem`，构建时来自 Mozilla SSL 配置生成器使用的 `ffdhe2048` 参数。
+
+公共 SSL 配置位于 `/etc/nginx/conf.d/ssl_common.conf`，默认包含：
+
+- TLSv1.2 和 TLSv1.3。
+- Mozilla intermediate 风格 cipher 配置。
+- `ssl_session_cache`。
+- 关闭 `ssl_session_tickets`。
+- 开启 OCSP stapling。
+
+在站点配置中可以直接使用：
+
+```nginx
+ssl_dhparam /etc/ssl/dhparam.pem;
+```
+
+## HTTP/3 示例
+
+HTTP/3 需要同时暴露 TCP 和 UDP 端口，并且两者端口号必须一致。示例：
+
+```nginx
 server {
-    # http/3
     listen 443 quic reuseport;
 
-    # http/2 and http/1.1
     listen 443 ssl;
     http2 on;
 
-    server_name localhost;  # customize to match your domain
+    server_name example.com;
 
-    # you need to mount these files when running this container
-    ssl_certificate     /etc/nginx/ssl/localhost.crt;
-    ssl_certificate_key /etc/nginx/ssl/localhost.key;
+    ssl_certificate     /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
-    # TLSv1.3 is required for QUIC.
     ssl_protocols TLSv1.2 TLSv1.3;
-
-    # 0-RTT QUIC connection resumption
     ssl_early_data on;
 
-    # Add Alt-Svc header to negotiate HTTP/3.
     add_header alt-svc 'h3=":443"; ma=86400';
-
-    # Sent when QUIC was used
     add_header QUIC-Status $http3;
 
     location / {
-        # your config
+        root /usr/share/nginx/html;
     }
 }
 ```
 
-Refer to `run-docker.sh` script on how to run this container and properly mount required config files and assets.
-
-## Development
-
-Building an image:
-
-```
-docker pull ghcr.io/macbre/nginx-http3:latest
-DOCKER_BUILDKIT=1 docker build . -t macbre/nginx --cache-from=ghcr.io/macbre/nginx-http3:latest --progress=plain
-```
-
-### Docker Compose example
-
-It is necessary to expose both UDP and TCP ports to be able to HTTP/3
+Docker Compose 示例：
 
 ```yaml
+services:
   nginx:
-    image: macbre/nginx-http3
+    image: mikusa/nginx-http3:latest
     ports:
-      - '443:443/tcp'
-      - '443:443/udp' # use UDP for usage of HTTP/3
+      - "443:443/tcp"
+      - "443:443/udp"
 ```
 
-Note: both TCP and UDP HTTP/3 ports needs to be the same
+## 本地开发和测试
+
+构建本地镜像：
+
+```bash
+DOCKER_BUILDKIT=1 docker build . \
+  -t mikusa/nginx-http3 \
+  --cache-from=ghcr.io/mikusaa/nginx-http3:latest \
+  --progress=plain
+```
+
+运行仓库内测试配置：
+
+```bash
+./run-docker.sh
+```
+
+测试默认运行用户：
+
+```bash
+docker run --rm mikusa/nginx-http3 whoami
+```
+
+期望输出：
+
+```text
+nginx
+```
+
+测试自定义 UID/GID：
+
+```bash
+docker run --rm \
+  -e PUID=1000 \
+  -e PGID=1001 \
+  mikusa/nginx-http3 id
+```
+
+期望输出中包含：
+
+```text
+uid=1000(nginx) gid=1001(nginx)
+```
+
+## GitHub Actions 自动构建
+
+仓库包含两个主要 workflow：
+
+- `.github/workflows/dockerimage.yml`：在 pull request 和 `master` 分支 push 时构建并测试镜像。
+- `.github/workflows/push-to-ghcr.yml`：在 GitHub Release 发布或 `master` 分支 push 时，构建并推送多架构镜像。
+
+发布 workflow 会同时推送到：
+
+```text
+ghcr.io/mikusaa/nginx-http3
+docker.io/mikusa/nginx-http3
+```
+
+发布平台为：
+
+```text
+linux/amd64
+linux/arm64
+```
+
+Docker Hub 推送需要在 GitHub 仓库设置中配置以下 secrets：
+
+```text
+DOCKERHUB_USERNAME=mikusa
+DOCKERHUB_TOKEN=<Docker Hub access token>
+```
+
+GitHub Container Registry 使用仓库自带的 `GITHUB_TOKEN`，workflow 已配置 `packages: write` 权限。

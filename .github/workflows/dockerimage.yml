@@ -37,9 +37,10 @@ jobs:
       uses: docker/build-push-action@v7
       with:
         context: .
-        tags: macbre/nginx
+        tags: mikusa/nginx-http3
+        load: true
         cache-from: |
-          ghcr.io/macbre/nginx-http3:latest
+          ghcr.io/mikusaa/nginx-http3:latest
 
     - name: Lint the Dockerfile
       uses: hadolint/hadolint-action@v3.3.0
@@ -52,12 +53,17 @@ jobs:
 
     - name: Are we running as non-root?
       run: |
-        docker run --rm -t macbre/nginx whoami | grep nginx
+        docker run --rm -t mikusa/nginx-http3 whoami | grep nginx
+
+    - name: Can we customize PUID and PGID?
+      run: |
+        docker run --rm -e PUID=1234 -e PGID=1235 mikusa/nginx-http3 id -u | grep 1234
+        docker run --rm -e PUID=1234 -e PGID=1235 mikusa/nginx-http3 id -g | grep 1235
 
     - name: Run nginx -V and njs -v
       run: |
-        docker run --rm -t macbre/nginx nginx -V | sed 's/\-\-/\n\t--/g' | tee
-        echo "njs v$(docker run -t macbre/nginx njs -v)"
+        docker run --rm -t mikusa/nginx-http3 nginx -V | sed 's/\-\-/\n\t--/g' | tee
+        echo "njs v$(docker run -t mikusa/nginx-http3 njs -v)"
 
     - name: Serve a static asset
       run: |
@@ -110,7 +116,7 @@ jobs:
 
     - name: Test njs command line
       run: |
-        echo "console.log('Using njs v' + njs.version)" | docker run -i --rm macbre/nginx njs -q - | grep "Using njs v0.9.8"
+        echo "console.log('Using njs v' + njs.version)" | docker run -i --rm mikusa/nginx-http3 njs -q - | grep "Using njs v0.9.8"
 
     - name: Show logs
       if: always()
