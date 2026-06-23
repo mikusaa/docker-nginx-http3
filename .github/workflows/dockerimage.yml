@@ -32,6 +32,30 @@ jobs:
       run: |
         mkcert -cert-file tests/localhost.crt -key-file tests/localhost.key localhost 0.0.0.0 ::1
 
+    - name: Verify NGINX release pin
+      run: |
+        version="$(awk -F= '/^ARG NGINX_VERSION=/ { print $2; exit }' Dockerfile)"
+        commit="$(awk -F= '/^ARG NGINX_COMMIT=/ { print $2; exit }' Dockerfile)"
+
+        if [ -z "$version" ] || [ -z "$commit" ]; then
+          echo "Unable to read NGINX_VERSION or NGINX_COMMIT from Dockerfile" >&2
+          exit 1
+        fi
+
+        expected_commit="$(git ls-remote --tags https://github.com/nginx/nginx.git "refs/tags/release-${version}" | awk '{ print $1; exit }')"
+
+        if [ -z "$expected_commit" ]; then
+          echo "Unable to find nginx release-${version}" >&2
+          exit 1
+        fi
+
+        if [ "$commit" != "$expected_commit" ]; then
+          echo "NGINX_COMMIT does not match release-${version}" >&2
+          echo "Dockerfile: $commit" >&2
+          echo "Expected:   $expected_commit" >&2
+          exit 1
+        fi
+
     # https://github.com/marketplace/actions/build-and-push-docker-images
     - name: Build the Docker image
       uses: docker/build-push-action@v7

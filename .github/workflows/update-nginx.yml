@@ -1,0 +1,38 @@
+name: Update NGINX version
+
+on:
+  schedule:
+    - cron: '20 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check latest NGINX release
+        id: nginx
+        run: scripts/update-nginx-version.sh
+
+      - name: Create pull request
+        if: steps.nginx.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.NGINX_UPDATE_TOKEN || github.token }}
+          branch: bot/update-nginx-${{ steps.nginx.outputs.new_version }}
+          commit-message: 更新 NGINX 到 ${{ steps.nginx.outputs.new_version }}
+          title: 更新 NGINX 到 ${{ steps.nginx.outputs.new_version }}
+          body: |
+            ## 更新内容
+
+            - NGINX: `${{ steps.nginx.outputs.old_version }}` -> `${{ steps.nginx.outputs.new_version }}`
+            - Commit: `${{ steps.nginx.outputs.old_commit }}` -> `${{ steps.nginx.outputs.new_commit }}`
+            - 来源：官方 `nginx/nginx` 仓库的 `release-${{ steps.nginx.outputs.new_version }}` tag。
+
+            合并后，现有 `master` push workflow 会构建并发布多架构镜像。
