@@ -17,8 +17,8 @@ ARG HEADERS_MORE_VERSION=0.39
 # https://github.com/leev/ngx_http_geoip2_module/releases
 ARG GEOIP2_VERSION=3.4
 
-# https://github.com/tokers/zstd-nginx-module/releases
-ARG ZSTD_VERSION=0.1.1
+# https://github.com/myguard-labs/nginx-zstd-module/releases/tag/0.90.9
+ARG ZSTD_MODULE_COMMIT=58bda8798c2735cadb5aa36695bab9a5e5e2fbd5
 
 # NGINX UID / GID
 ARG NGINX_USER_UID=100
@@ -90,7 +90,7 @@ ARG NGX_BROTLI_COMMIT
 ARG HEADERS_MORE_VERSION
 ARG NJS_COMMIT
 ARG GEOIP2_VERSION
-ARG ZSTD_VERSION
+ARG ZSTD_MODULE_COMMIT
 ARG NGINX_USER_UID
 ARG NGINX_GROUP_GID
 ARG CONFIG
@@ -162,8 +162,13 @@ RUN \
   && git clone --depth 1 --branch ${GEOIP2_VERSION} https://github.com/leev/ngx_http_geoip2_module /usr/src/ngx_http_geoip2_module
 
 RUN \
-  echo "Downloading zstd-nginx-module ..." \
-  && git clone --depth 1 --branch ${ZSTD_VERSION} https://github.com/tokers/zstd-nginx-module.git /usr/src/zstd
+  echo "Cloning nginx-zstd-module $ZSTD_MODULE_COMMIT ..." \
+  && mkdir /usr/src/zstd \
+  && cd /usr/src/zstd \
+  && git init \
+  && git remote add origin https://github.com/myguard-labs/nginx-zstd-module.git \
+  && git fetch --depth 1 origin "$ZSTD_MODULE_COMMIT" \
+  && git checkout -q FETCH_HEAD
 
 RUN \
   echo "Cloning and configuring quickjs ..." \

@@ -20,7 +20,7 @@ jobs:
       run: |
         set -x
         sudo apt-get update && \
-          sudo apt-get install -y libnss3-tools
+          sudo apt-get install -y libnss3-tools zstd
 
         curl https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/mkcert-${MKCERT_VERSION}-linux-amd64 --location --output /tmp/mkcert
         chmod 744 /tmp/mkcert
@@ -100,7 +100,10 @@ jobs:
         curl -v --compressed localhost:8888 2>&1 | tee /tmp/out
 
         grep --fixed-strings --invert-match -i '< Server: nginx' /tmp/out > /dev/null
-        grep --fixed-strings '< Content-Encoding: zstd' /tmp/out
+        if grep --fixed-strings --ignore-case '< Content-Encoding: zstd' /tmp/out; then
+          echo 'Dynamic zstd must be disabled by default' >&2
+          exit 1
+        fi
         grep --fixed-strings '<p>It works!</p>' /tmp/out
 
 
@@ -109,6 +112,29 @@ jobs:
         grep --fixed-strings 'HTTP/1.1 301 Moved Permanently' /tmp/out
         grep --fixed-strings '< x-rewrite: 1' /tmp/out
         grep --fixed-strings '< Location: http://localhost/foobar' /tmp/out
+
+    - name: Check opt-in zstd responses
+      run: |
+        set -e
+
+        curl -sS --max-time 10 \
+          -H 'Accept-Encoding: zstd' \
+          -D /tmp/zstd-small.headers -o /tmp/zstd-small.body \
+          http://localhost:8888/zstd-small
+        grep -i '^Content-Encoding: zstd' /tmp/zstd-small.headers
+        test "$(zstd -dc /tmp/zstd-small.body)" = 'small zstd response'
+
+        test "$(curl -sS --max-time 10 \
+          -H 'Accept-Encoding: zstd' -o /tmp/zstd-empty.body \
+          -w '%{http_code}' http://localhost:8888/zstd-empty)" = 200
+        test ! -s /tmp/zstd-empty.body
+
+        curl -sS --max-time 10 \
+          -H 'Accept-Encoding: zstd' \
+          -D /tmp/zstd-proxy.headers -o /tmp/zstd-proxy.body \
+          http://localhost:8888/zstd-proxy
+        grep -i '^Content-Encoding: zstd' /tmp/zstd-proxy.headers
+        zstd -dc /tmp/zstd-proxy.body | cmp - <(printf 'first chunk\nsecond chunk\n')
 
     - name: Check njs module
       run: |

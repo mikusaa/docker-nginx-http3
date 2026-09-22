@@ -5,4 +5,13 @@ function hello(r) {
     r.return(200, `Hello world from njs v${njs.version}\n`);
 }
 
-export default {hello};
+function stream(r) {
+    r.status = 200;
+    r.headersOut['Content-Type'] = 'text/plain';
+    r.sendHeader();
+    r.send('first chunk\n');
+    r.send('second chunk\n');
+    r.finish();
+}
+
+export default {hello, stream};

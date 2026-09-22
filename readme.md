@@ -38,7 +38,7 @@ docker run --rm \
 - NGINX 官方模块：SSL、Real IP、HTTP/2、HTTP/3、stream、mail、slice、auth_request、gzip_static、stub_status 等。
 - `headers-more-nginx-module`：更灵活地设置、覆盖或清理请求/响应头。
 - `ngx_brotli`：支持 Brotli 动态压缩和 `.br` 静态预压缩文件。
-- `zstd-nginx-module`：支持 Zstandard 动态压缩和 `.zst` 静态预压缩文件。
+- `nginx-zstd-module`：支持 Zstandard 动态压缩和 `.zst` 静态预压缩文件。使用固定提交的 [myguard-labs fork](https://github.com/myguard-labs/nginx-zstd-module)，动态压缩默认关闭。
 - `ngx_http_geoip2_module`：基于 MaxMind GeoIP2 数据库生成客户端 IP 相关变量。
 - `njs`：在 NGINX 内使用 JavaScript 扩展请求处理逻辑。
 - kTLS/sendfile：编译时启用 OpenSSL kTLS 选项，用于在支持的系统上优化 TLS 传输。
@@ -67,8 +67,10 @@ docker run --rm mikusa/nginx-http3 njs -v
 - 关闭 `server_tokens`。
 - 清理 `Server` 和 `X-Powered-By` 响应头。
 - 设置基础安全响应头。
-- 启用 gzip、Brotli、Zstandard。
+- 启用 gzip、Brotli 和 Zstandard 静态预压缩文件；动态 Zstandard 默认关闭。
 - 使用包含 `$http3` 的访问日志格式，便于区分 HTTP/3 请求。
+
+如确实需要动态 Zstandard，可在经过测试的 `server` 或 `location` 中设置 `zstd on;`。建议先对实际响应大小、压缩收益和 worker CPU 做对比，再逐步启用。`zstd_static on;` 仅对已有 `.zst` 文件生效，不会对 PHP 动态响应做实时压缩。即使关闭了动态压缩，镜像中仍包含 Zstandard 模块。移除模块能减少 NGINX 可执行文件体积和构建复杂度，但当前镜像中的 `tiff` 也依赖 `zstd-libs`，因此不会直接省掉这份运行库。
 
 ## SSL 配置
 
