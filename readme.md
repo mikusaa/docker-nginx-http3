@@ -175,10 +175,13 @@ uid=1000(nginx) gid=1001(nginx)
 
 ## GitHub Actions 自动构建
 
-仓库包含两个主要 workflow：
+仓库包含三个主要 workflow：
 
 - `.github/workflows/dockerimage.yml`：在 pull request 和 `master` 分支 push 时构建并测试镜像。
-- `.github/workflows/push-to-ghcr.yml`：在 GitHub Release 发布或 `master` 分支 push 时，构建并推送多架构镜像。
+- `.github/workflows/update-nginx.yml`：每天检查 NGINX 官方 release tag；发现更新时先运行完整镜像测试，成功后自动提交到 `master` 并发布镜像。测试失败不会提交或发布。
+- `.github/workflows/push-to-ghcr.yml`：普通 `master` push 的 CI 成功后，或自动更新完成测试并提交后，构建并推送多架构镜像。GitHub Release 不触发重复构建。
+
+自动更新使用 GitHub Actions 自带的 `GITHUB_TOKEN` 提交。该 token 的提交不会触发新的 push workflow，因此更新工作流会显式调用测试和发布；如果测试期间 `master` 被其他提交推进，本次提交会失败，不会覆盖新提交。
 
 发布 workflow 会同时推送到：
 

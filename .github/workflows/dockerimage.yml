@@ -4,6 +4,16 @@ on:
   push:
     branches: [ master ]
   pull_request:
+  workflow_call:
+    inputs:
+      base_ref:
+        type: string
+        required: false
+        default: ''
+      candidate_artifact:
+        type: string
+        required: false
+        default: ''
 
 jobs:
 
@@ -12,6 +22,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.base_ref || github.sha }}
+
+    - name: Restore candidate Dockerfile
+      if: inputs.candidate_artifact != ''
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.candidate_artifact }}
     
     # https://github.com/FiloSottile/mkcert#installation
     - name: Install and setup mkcert

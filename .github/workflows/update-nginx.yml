@@ -5,34 +5,81 @@ on:
     - cron: '20 3 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: update-nginx
+  cancel-in-progress: false
+
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  update:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.nginx.outputs.changed }}
+      base_sha: ${{ steps.base.outputs.sha }}
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Record base commit
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Check latest NGINX release
         id: nginx
         run: scripts/update-nginx-version.sh
 
-      - name: Create pull request
+      - name: Save candidate Dockerfile
         if: steps.nginx.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: actions/upload-artifact@v4
         with:
-          token: ${{ secrets.NGINX_UPDATE_TOKEN || github.token }}
-          branch: bot/update-nginx-${{ steps.nginx.outputs.new_version }}
-          commit-message: 更新 NGINX 到 ${{ steps.nginx.outputs.new_version }}
-          title: 更新 NGINX 到 ${{ steps.nginx.outputs.new_version }}
-          body: |
-            ## 更新内容
+          name: nginx-dockerfile
+          path: Dockerfile
+          if-no-files-found: error
+          overwrite: true
 
-            - NGINX: `${{ steps.nginx.outputs.old_version }}` -> `${{ steps.nginx.outputs.new_version }}`
-            - Commit: `${{ steps.nginx.outputs.old_commit }}` -> `${{ steps.nginx.outputs.new_commit }}`
-            - 来源：官方 `nginx/nginx` 仓库的 `release-${{ steps.nginx.outputs.new_version }}` tag。
+  verify:
+    needs: prepare
+    if: needs.prepare.outputs.changed == 'true'
+    uses: ./.github/workflows/dockerimage.yml
+    with:
+      base_ref: ${{ needs.prepare.outputs.base_sha }}
+      candidate_artifact: nginx-dockerfile
 
-            合并后，现有 `master` push workflow 会构建并发布多架构镜像。
+  promote:
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nginx-dockerfile
+
+      - name: Commit tested version to master
+        id: commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Dockerfile
+          git commit -m "Update NGINX to $(awk -F= '/^ARG NGINX_VERSION=/ { print $2; exit }' Dockerfile)"
+          git push origin HEAD:refs/heads/master
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: promote
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/push-to-ghcr.yml
+    with:
+      ref: ${{ needs.promote.outputs.sha }}
+    secrets: inherit
